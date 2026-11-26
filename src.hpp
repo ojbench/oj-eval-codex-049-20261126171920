@@ -22,9 +22,10 @@ private:
     double v_max, r;
     Monitor *monitor;
     Vec progress_pos;
-    int ticks = 0, route_age = 0;
+    int ticks = 0, still_ticks = 0, escape_left = 0, escape_cooldown = 0;
     std::vector<Vec> route;
     Vec yield_target;
+    Vec escape_target;
     int yield_left = 0, yield_cooldown = 0;
 
     void plan_route() {
@@ -71,7 +72,6 @@ private:
         route.clear();
         if (prev[1] != -1)
             for (int u = 1; u != 0; u = prev[u]) route.push_back(nodes[u]);
-        route_age = 0;
     }
 
     struct Plane { Vec n; double b; }; // Feasible velocities satisfy n dot v <= b.
@@ -123,7 +123,6 @@ public:
                 plan_route();
             progress_pos = pos_cur;
         }
-        ++route_age;
         while (!route.empty() && (route.back() - pos_cur).norm() < std::max(0.02, v_max * TIME_INTERVAL))
             route.pop_back();
         if (!route.empty()) goal = route.back() - pos_cur;
@@ -145,6 +144,35 @@ public:
                     break;
                 }
             }
+        }
+        // All controllers observe the same public snapshot. A prolonged global
+        // standstill triggers a brief outward expansion, opening escape gaps.
+        Vec center;
+        double motion = 0, scale = 0;
+        int count = monitor->get_robot_number();
+        for (int j = 0; j < count; ++j) {
+            center += monitor->get_pos_cur(j);
+            motion += monitor->get_v_cur(j).norm();
+            scale += monitor->get_r(j);
+        }
+        center = center / count;
+        if (escape_cooldown > 0) --escape_cooldown;
+        if (motion < std::max(0.0001, scale * 0.0001)) ++still_ticks;
+        else still_ticks = 0;
+        if (still_ticks >= 15 && ticks > 60 && escape_cooldown == 0) {
+            Vec outward = pos_cur - center;
+            if (outward.norm() < 0.001) {
+                double angle = 2 * PI * id / count;
+                outward = Vec(std::cos(angle), std::sin(angle));
+            }
+            escape_target = pos_cur + outward.normalize() * std::max(scale, 1.0);
+            escape_left = 100;
+            escape_cooldown = 500;
+            route.clear();
+        }
+        if (escape_left > 0) {
+            --escape_left;
+            goal = escape_target - pos_cur;
         }
         Vec preferred = limit(goal / TIME_INTERVAL);
         Vec velocity = monitor->get_v_cur(id);
