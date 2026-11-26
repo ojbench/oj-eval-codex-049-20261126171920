@@ -159,7 +159,8 @@ public:
         if (escape_cooldown > 0) --escape_cooldown;
         if (motion < std::max(0.0001, scale * 0.0001)) ++still_ticks;
         else still_ticks = 0;
-        if (still_ticks >= 15 && ticks > 60 && escape_cooldown == 0) {
+        bool periodic_escape = ticks >= 800 && (ticks - 800) % 2000 == 0;
+        if ((still_ticks >= 15 || periodic_escape) && ticks > 60 && escape_cooldown == 0) {
             Vec outward = pos_cur - center;
             if (outward.norm() < 0.001) {
                 double angle = 2 * PI * id / count;
