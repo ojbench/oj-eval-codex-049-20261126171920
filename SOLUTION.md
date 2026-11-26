@@ -18,6 +18,8 @@ visibility graph around observed obstacle disks to find detours. Smaller robots
 temporarily yield outward when a larger, nearly stationary neighbor is trapped;
 this allows motion in tightly packed configurations where a stationary robot at
 its target would otherwise block all exits.
+Prolonged global standstills trigger a brief outward expansion based entirely
+on the public snapshot, allowing tightly packed groups to separate.
 
 For N robots, ordinary velocity selection uses O(N^3) time and O(N) space per
 robot. The occasional visibility graph also uses O(N^3) time and O(N) storage
@@ -27,3 +29,20 @@ Run `python3 tests/run_samples.py` to compile against the unmodified provided
 framework and verify completion without collisions or speeding on all eight
 distributed samples. This is a heuristic optimization solution; global
 completion in every possible configuration is not guaranteed.
+
+## Submission history
+
+| Attempt | Submission | Commit | Detailed score / 200 | Result |
+| --- | --- | --- | --- | --- |
+| 1 | 879487 | 5c8f122 | 0 | Git URL compiled as source; client mismatch |
+| 2 | 879488 | df149cd | 171.788890 | Partial credit |
+| 3 | 879491 | 882c258 | 178.570630 | Best result |
+| 4 | 879495 | 2e5e94e | 177.796346 | Periodic escape regression |
+| 5 | 879497 | 3936be3 | 176.046322 | Staggered escape regression |
+
+The final header is restored exactly to the best submission, 879491.
+All five attempts are complete. The judge labels partial-credit runs
+`wrong_answer`; the detailed score is reported above (the top-level API score
+is truncated to an integer). Cases 12 and 24 remain the main limitations.
+The client now supports `submit --problem-id 2571 --source src.hpp` because
+this judge expects source contents rather than a repository URL.

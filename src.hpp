@@ -159,22 +159,20 @@ public:
         if (escape_cooldown > 0) --escape_cooldown;
         if (motion < std::max(0.0001, scale * 0.0001)) ++still_ticks;
         else still_ticks = 0;
-        bool periodic_escape = ticks >= 800 && (ticks - 800) % 4000 == 0;
-        if ((still_ticks >= 15 || periodic_escape) && ticks > 60 && escape_cooldown == 0) {
+        if (still_ticks >= 15 && ticks > 60 && escape_cooldown == 0) {
             Vec outward = pos_cur - center;
             if (outward.norm() < 0.001) {
                 double angle = 2 * PI * id / count;
                 outward = Vec(std::cos(angle), std::sin(angle));
             }
             escape_target = pos_cur + outward.normalize() * std::max(scale, 1.0);
-            escape_left = 100 + 20 * (count - 1 - id);
-            escape_cooldown = 1000;
+            escape_left = 100;
+            escape_cooldown = 500;
             route.clear();
         }
         if (escape_left > 0) {
             --escape_left;
             goal = escape_target - pos_cur;
-            route.clear();
         }
         Vec preferred = limit(goal / TIME_INTERVAL);
         Vec velocity = monitor->get_v_cur(id);
@@ -219,7 +217,7 @@ public:
         preferred = limit(preferred + Vec(preferred.y, -preferred.x) * (0.25 * urgency));
         planes.insert(planes.end(), safe.begin(), safe.end());
         Vec result;
-        if (escape_left > 0 || !solve(planes, preferred, result)) solve(safe, preferred, result);
+        if (!solve(planes, preferred, result)) solve(safe, preferred, result);
         return limit(result);
     }
 };
